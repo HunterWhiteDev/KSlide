@@ -1,0 +1,22 @@
+{
+  "KPackageStructure": "KWin/Script",
+  "KPlugin": {
+    "Name": "KSlide",
+    "Description": "Scrolling Window Manager For Kwin",
+    "Icon": "preferences-system-windows",
+    "Authors": [
+      {
+        "Email": "hunterwhite.dev@gmail.com",
+        "Name": "Hunter White"
+      }
+    ],
+    "Id": "KSlide",
+    "Version": "0.1",
+    "License": "GPLv3",
+    "Website": "https://hunterwhite.dev",
+    "BugReportUrl": "https://github.com/hunterwhitedev/KSlider/issues"
+  },
+  "X-Plasma-API": "javascript",
+  "X-Plasma-API-Minimum-Version": "6.0",
+  "X-Plasma-MainScript": "code/main.js"
+}
