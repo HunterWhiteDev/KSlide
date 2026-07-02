@@ -24,12 +24,12 @@ export default class Column {
       y: window.y + this.padding,
     };
 
-    window.interactiveMoveResizeStarted.connect(() => {
-      print("KS: rezie started");
-    });
-
     window.interactiveMoveResizeStepped.connect(() => {
       window.frameGeometry = window.frameGeometry;
+    });
+
+    window.frameGeometryChanged.connect((oldGeometry) => {
+      if (window.move) window.frameGeometry = oldGeometry;
     });
 
     this.windows.push(window);
