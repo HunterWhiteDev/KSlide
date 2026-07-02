@@ -1,5 +1,5 @@
 node_modules/
-contents/code/
+package/contents/code/main.js
 
 package-lock.json
 *.kwinscript
