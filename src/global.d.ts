@@ -1,5 +1,6 @@
 import "kwin-types";
 import Column from "./Column";
+import Grid from "./Grid";
 
 export declare global {
   // declare const getColumnWithActiveWindow = () => [Column, index];

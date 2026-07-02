@@ -1,5 +1,8 @@
+import Column from "./Column";
+
 export const initShortcuts = () => {
   const padding = workspace.__globals.padding;
+  const grid = workspace.__globals.grid;
   const focusLeft = () => {
     const columns = workspace.__globals.getColumnsSortedByXPos();
 
@@ -7,23 +10,47 @@ export const initShortcuts = () => {
     if (!columnResponse) return;
     const [activeColumn, index] = columnResponse;
 
-    const newActiveColumn = columns[index - 1];
-    const newActiveWindow = newActiveColumn.windows[0];
-    if (!newActiveWindow) return;
+    let newActiveColumn;
+    let newActiveWindow;
 
-    workspace.activeWindow = newActiveWindow;
+    let willScrollFirstItem = false;
 
-    const scrollOffset = Math.abs(
-      activeColumn.xPosStart - newActiveColumn.xPosStart,
-    );
+    let scrollOffset = 0;
+    if (index === 0) {
+      //Total horizontal space
+      let maxWidth = 0;
+      for (const output of workspace.screens) {
+        maxWidth += output.geometry.x;
+      }
 
-    for (let i = 0; i < columns.length; i++) {
-      const column = columns[i];
-      //Find the difference first, THEN, add that to the currentXPos of the currnet column we iterate over
+      //On my machine, it was let me scroll over one window width worth out of view. So it made conceptual sense to substract the columnWidth.
+      const distanceLeftToScroll =
+        maxWidth - activeColumn.xPosStart - activeColumn.width;
 
-      const newXPos = column.xPosStart + scrollOffset;
+      if (distanceLeftToScroll >= activeColumn.width) {
+        scrollOffset = activeColumn.width;
+      }
 
-      column.setXPos(newXPos);
+      willScrollFirstItem = true;
+    } else {
+      newActiveColumn = columns[index - 1];
+      newActiveWindow = newActiveColumn.windows[0];
+      scrollOffset = Math.abs(
+        activeColumn.xPosStart - newActiveColumn.xPosStart,
+      );
+
+      workspace.activeWindow = newActiveWindow;
+    }
+
+    if (newActiveColumn?.xPosStart < 0 || willScrollFirstItem) {
+      for (let i = 0; i < columns.length; i++) {
+        const column = columns[i];
+        //Find the difference first, THEN, add that to the currentXPos of the currnet column we iterate over
+
+        const newXPos = column.xPosStart + scrollOffset;
+
+        column.setXPos(newXPos);
+      }
     }
   };
 
@@ -33,25 +60,46 @@ export const initShortcuts = () => {
     const columnResponse = workspace.__globals.getColumnWithActiveWindow();
     if (!columnResponse) return;
     const [activeColumn, index] = columnResponse;
-    const newActiveColumn = columns[index + 1];
-    const newActiveWindow = newActiveColumn.windows[0];
-    if (!newActiveWindow) return;
 
-    workspace.activeWindow = newActiveWindow;
+    let newActiveColumn;
+    let newActiveWindow;
 
-    const scrollOffset = Math.abs(
-      newActiveColumn.xPosStart - activeColumn.xPosStart,
-    );
-    print(scrollOffset);
+    let willScrollLastItem = false;
 
-    for (let i = 0; i < columns.length; i++) {
-      const column = columns[i];
+    let scrollOffset = 0;
+    if (index === columns.length - 1) {
+      if (activeColumn.xPosStart >= activeColumn.width) {
+        scrollOffset = activeColumn.width;
+      }
+      willScrollLastItem = true;
+    } else {
+      newActiveColumn = columns[index + 1];
+      newActiveWindow = newActiveColumn.windows[0];
+      scrollOffset = Math.abs(
+        newActiveColumn.xPosStart - activeColumn.xPosStart,
+      );
 
-      const newXPos = column.xPosStart - scrollOffset;
-      column.setXPos(newXPos);
+      workspace.activeWindow = newActiveWindow;
+    }
+
+    let maxWidth = 0;
+    for (const output of workspace.screens) {
+      maxWidth += output.geometry.x;
+    }
+
+    if (newActiveColumn?.getXPosEnd() > maxWidth || willScrollLastItem) {
+      for (let i = 0; i < columns.length; i++) {
+        const column = columns[i];
+
+        const newXPos = column.xPosStart - scrollOffset;
+        column.setXPos(newXPos);
+      }
     }
   };
 
+  //This function does 2 things
+  //1) Make a Column take up the max amount of space it possibly
+  //2) Makes every other column grow or shrink depending on what size columns to the left or right need to change by
   const maxSpace = () => {
     try {
       const columnResponse = workspace.__globals.getColumnWithActiveWindow();
@@ -60,23 +108,26 @@ export const initShortcuts = () => {
 
       const [activeColumn, index] = columnResponse;
 
-      const oldWidth = activeColumn.width;
-      const newWidth = activeColumn.maximize();
-      if (typeof newWidth !== "number")
-        return print("KS: NewXPos was not a number (returned null)");
+      const oldXPosStart = activeColumn.xPosStart;
+      const oldXPosEnd = activeColumn.getXPosEnd();
 
-      //If the difference is positive, X increased (moved right), if the difference is neegative, the X positioned decreased (moved left)
-      const didGrow = Math.sign(newWidth - newWidth);
+      activeColumn.maximize();
 
-      const difference = Math.abs(oldWidth - newWidth);
+      const newXPostStart = activeColumn.xPosStart;
+      const newXposEnd = activeColumn.getXPosEnd();
+
+      const leftDifference = newXPostStart - oldXPosStart;
+      const rightDifference = newXposEnd - oldXPosEnd;
+
       for (let i = 0; i < grid.columns.length; i++) {
         if (i === index) continue;
-        let column = grid.columns[i];
 
-        if (didGrow) {
-          column.setXPos(column.xPosStart + difference + padding);
-        } else {
-          column.setXPos(column.xPosStart - difference + padding);
+        const column: Column = grid.columns[i];
+
+        if (i < index) {
+          column.setXPos(column.xPosStart + leftDifference);
+        } else if (i > index) {
+          column.setXPos(column.xPosStart + rightDifference);
         }
       }
     } catch (error) {
