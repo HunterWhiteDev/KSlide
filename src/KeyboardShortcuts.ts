@@ -135,6 +135,39 @@ export const initShortcuts = () => {
     }
   };
 
+  const swapLeft = () => {
+    const columnResponse = workspace.__globals.getColumnWithActiveWindow();
+    const columns = workspace.__globals.getColumnsSortedByXPos();
+    if (!columnResponse) return;
+    const [column, index] = columnResponse;
+
+    if (index === 0) return;
+
+    const columnXPos = column.xPosStart;
+    const swapColumn = columns[index - 1];
+    column.setXPos(swapColumn.xPosStart);
+    swapColumn.setXPos(columnXPos);
+
+    workspace.activeWindow = swapColumn.windows[0];
+  };
+
+  const swapRight = () => {
+    const columnResponse = workspace.__globals.getColumnWithActiveWindow();
+    const columns = workspace.__globals.getColumnsSortedByXPos();
+    if (!columnResponse) return;
+
+    const [column, index] = columnResponse;
+
+    if (index === columns.length - 1) return;
+
+    const columnXPos = column.xPosStart;
+    const swapColumn = columns[index + 1];
+    column.setXPos(swapColumn.xPosStart);
+    swapColumn.setXPos(columnXPos);
+
+    workspace.activeWindow = swapColumn.windows[0];
+  };
+
   registerShortcut(
     "Focus left",
     "Focuses the next window to the left",
@@ -153,5 +186,19 @@ export const initShortcuts = () => {
     "Makes the active column take up the maximum amount of space possible. This is normally your available space minus your padding",
     "Meta+M",
     maxSpace,
+  );
+
+  registerShortcut(
+    "Swap The Current Column with its Column to the left",
+    "",
+    "Meta+Ctrl+A",
+    swapLeft,
+  );
+
+  registerShortcut(
+    "Swap The Current Column with its Column to the right",
+    "",
+    "Meta+Ctrl+A",
+    swapRight,
   );
 };
