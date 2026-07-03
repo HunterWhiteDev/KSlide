@@ -1,7 +1,6 @@
 import Column from "./Column";
 
 export const initShortcuts = () => {
-  const padding = workspace.__globals.padding;
   const grid = workspace.__globals.grid;
   const focusLeft = () => {
     const columns = workspace.__globals.getColumnsSortedByXPos();
