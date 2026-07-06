@@ -5,7 +5,7 @@ import { initShortcuts } from "./KeyboardShortcuts";
 const grid = new Grid();
 const padding = 8;
 
-const exlcludeList = ["org.kde.plasmashell", "krunner"];
+const exlcludeList = ["org.kde.plasmashell", "krunner", "org.kde.spectacle"];
 
 function getColumnsSortedByXPos(): Column[] {
   return workspace.__globals.grid.columns.sort((a, b) => {
@@ -74,6 +74,7 @@ main();
 //TODO: Make this function add the new column of the last column's width + padding
 const addWindow = (newWindow: KWin.AbstractClient) => {
   if (exlcludeList.includes(newWindow.resourceClass)) return;
+  if (!newWindow.normalWindow) return;
   const columns = workspace.__globals.getColumnsSortedByXPos();
   const lastColumn = columns[columns.length - 1];
 
@@ -91,6 +92,16 @@ const addWindow = (newWindow: KWin.AbstractClient) => {
 
 const removeWindow = (removedWindow: KWin.AbstractClient) => {
   if (exlcludeList.includes(removedWindow.resourceClass)) return;
+
+  //Just make sure it's a normal window that did get added
+  let foundInList = false;
+  for (const col of grid.columns) {
+    for (const win of col.windows) {
+      if (removedWindow.internalId === win.internalId) foundInList = true;
+    }
+  }
+
+  if (!foundInList) return;
 
   //Might have to manually filter where this was in the grid (hopefully not)
   const columnResponse = getColumnWithActiveWindow();

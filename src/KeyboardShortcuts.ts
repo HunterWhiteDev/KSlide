@@ -2,6 +2,7 @@ import Column from "./Column";
 
 export const initShortcuts = () => {
   const grid = workspace.__globals.grid;
+
   const focusLeft = () => {
     const columns = workspace.__globals.getColumnsSortedByXPos();
 
@@ -142,12 +143,9 @@ export const initShortcuts = () => {
 
     if (index === 0) return;
 
-    const columnXPos = column.xPosStart;
     const swapColumn = columns[index - 1];
     column.setXPos(swapColumn.xPosStart);
-    swapColumn.setXPos(columnXPos);
-
-    workspace.activeWindow = swapColumn.windows[0];
+    swapColumn.setXPos(column.getXPosEnd());
   };
 
   const swapRight = () => {
@@ -159,12 +157,9 @@ export const initShortcuts = () => {
 
     if (index === columns.length - 1) return;
 
-    const columnXPos = column.xPosStart;
     const swapColumn = columns[index + 1];
-    column.setXPos(swapColumn.xPosStart);
-    swapColumn.setXPos(columnXPos);
-
-    workspace.activeWindow = swapColumn.windows[0];
+    swapColumn.setXPos(column.xPosStart);
+    column.setXPos(swapColumn.getXPosEnd());
   };
 
   registerShortcut(
