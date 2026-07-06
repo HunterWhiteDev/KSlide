@@ -97,6 +97,39 @@ export const initShortcuts = () => {
     }
   };
 
+  const shiftViewLeft = () => {
+    const columns = workspace.__globals.getColumnsSortedByXPos();
+    const columnResponse = workspace.__globals.getColumnWithActiveWindow();
+    if (!columnResponse) return;
+
+    const [activeColumn, index] = columnResponse;
+    if (index === 0) return;
+    const columnToScroll = columns[index - 1];
+
+    for (let i = 0; i < columns.length; i++) {
+      const column = columns[i];
+
+      const newXPos = column.xPosStart + columnToScroll.width;
+      column.setXPos(newXPos);
+    }
+  };
+  const shiftViewRight = () => {
+    const columns = workspace.__globals.getColumnsSortedByXPos();
+    const columnResponse = workspace.__globals.getColumnWithActiveWindow();
+    if (!columnResponse) return;
+
+    const [activeColumn, index] = columnResponse;
+    if (index === columns.length - 1) return;
+    const columnToScroll = columns[index + 1];
+
+    for (let i = 0; i < columns.length; i++) {
+      const column = columns[i];
+
+      const newXPos = column.xPosStart - columnToScroll.width;
+      column.setXPos(newXPos);
+    }
+  };
+
   //This function does 2 things
   //1) Make a Column take up the max amount of space it possibly
   //2) Makes every other column grow or shrink depending on what size columns to the left or right need to change by
@@ -192,7 +225,21 @@ export const initShortcuts = () => {
   registerShortcut(
     "Swap The Current Column with its Column to the right",
     "",
-    "Meta+Ctrl+A",
+    "Meta+Ctrl+D",
     swapRight,
+  );
+
+  registerShortcut(
+    "Scroll Viewport Left",
+    "Scrolls the view port by the width of the column to the left without focusing the column",
+    "Meta+Shift+A",
+    shiftViewLeft,
+  );
+
+  registerShortcut(
+    "Scroll Viewport Right",
+    "Scrolls the view port by the width of the column to the right without focusing the column",
+    "Meta+Shift+D",
+    shiftViewRight,
   );
 };
