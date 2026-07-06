@@ -1,3 +1,5 @@
+import maxArea from "./utils/maxArea";
+
 export default class Column {
   width: number;
   xPosStart: number;
@@ -60,24 +62,28 @@ export default class Column {
     this.xPosStart = number;
   }
 
+  //This function maximizes the column by using the screen the least amount of area. This avoids including panels at the top or bottom. Some vlaues have to be the currentScreenGeometry and some have to be the leastAreaGeometry. Calcuations for handling panels on the left or right will need to be done in the future
   maximize(): QRect["x"] | void {
-    // KWin.WorkspaceWrapper.ClientAreaOption.MaximizeArea;
-    const maxGeometry = workspace.clientArea(2, this.windows[0]);
-    print(maxGeometry);
+    //Screen with least amount of area geometry
+    const leastAreaGeometry = maxArea();
 
-    if (!maxGeometry) return print("KS: No Max Geometry found");
+    //Current Screen Geometry
+    // KWin.WorkspaceWrapper.ClientAreaOption.MaximizeArea;
+    const currentScreenGeometry = workspace.clientArea(2, this.windows[0]);
+
+    if (!currentScreenGeometry) return print("KS: No Max Geometry found");
     for (const window of this.windows) {
       window.frameGeometry = {
-        width: maxGeometry.width - this.padding * 2,
-        height: maxGeometry.height - this.padding * 2,
-        x: maxGeometry.x + this.padding,
-        y: maxGeometry.y + this.padding,
+        width: leastAreaGeometry.width - this.padding * 2,
+        height: leastAreaGeometry.height - this.padding * 2,
+        x: currentScreenGeometry.x + this.padding,
+        y: leastAreaGeometry.y + this.padding,
       };
     }
 
-    this.xPosStart = maxGeometry.x;
-    this.width = maxGeometry.width;
-    return maxGeometry.width;
+    this.xPosStart = currentScreenGeometry.x;
+    this.width = currentScreenGeometry.width;
+    return currentScreenGeometry.width;
   }
 
   getXPosEnd() {

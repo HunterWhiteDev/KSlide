@@ -18,6 +18,7 @@ export declare global {
       screens: Output[];
       windowAdded: Signal<(window: KWin.AbstractClient) => void>;
       windowRemoved: Signal<(window: KWin.AbstractClient) => void>;
+      currentDesktop: VirtualDesktop;
     }
 
     interface AbstractClient {
