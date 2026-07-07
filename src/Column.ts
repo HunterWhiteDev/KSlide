@@ -13,13 +13,27 @@ export default class Column {
   //A Column's initial geometry is set by its initialWindow.
   //A Column's geometry is set by the intial window. The initial window will not have the padding applied to it's geometry when it is passed to the constructor. calling addWindow() will apply the geometry with padding on the initial window
   //All other operations interacting with a window that is part of a Columns windows property should factor in the padding in the window deminsions
-  constructor(initialWindow: KWin.AbstractClient, padding: number) {
+  constructor(
+    initialWindow: KWin.AbstractClient,
+    padding: number,
+    xPosStart: number,
+  ) {
     const leastAreaGeometry = maxArea();
 
-    this.width = leastAreaGeometry.width;
-    this.xPosStart = initialWindow.frameGeometry.x;
+    this.width = 1700;
+    this.xPosStart = xPosStart;
     this.padding = padding;
-    this.addWindow(initialWindow);
+
+    const geometry = {
+      width: this.width - this.padding * 2,
+      height: leastAreaGeometry.height - this.padding * 2,
+      x: this.xPosStart + this.padding,
+      y: leastAreaGeometry.y + this.padding,
+    };
+
+    initialWindow.frameGeometry = geometry;
+
+    this.windows.push(initialWindow);
   }
 
   addWindow(window: KWin.AbstractClient) {
@@ -41,7 +55,6 @@ export default class Column {
     // });
 
     this.windows.push(window);
-    this.maximize();
   }
 
   deleteWindow(newWindow: KWin.AbstractClient) {
@@ -90,6 +103,7 @@ export default class Column {
 
     this.xPosStart = currentScreenGeometry.x;
     this.width = currentScreenGeometry.width;
+
     return currentScreenGeometry.width;
   }
 
