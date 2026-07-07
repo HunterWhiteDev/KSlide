@@ -1,5 +1,8 @@
 import maxArea from "./utils/maxArea";
 
+// function frameGeometryChange(window: KWin.AbstractClient, oldGeometry: QRect) {
+// if(window.move)
+// };
 export default class Column {
   width: number;
   xPosStart: number;
@@ -11,7 +14,9 @@ export default class Column {
   //A Column's geometry is set by the intial window. The initial window will not have the padding applied to it's geometry when it is passed to the constructor. calling addWindow() will apply the geometry with padding on the initial window
   //All other operations interacting with a window that is part of a Columns windows property should factor in the padding in the window deminsions
   constructor(initialWindow: KWin.AbstractClient, padding: number) {
-    this.width = initialWindow.frameGeometry.width;
+    const leastAreaGeometry = maxArea();
+
+    this.width = leastAreaGeometry.width;
     this.xPosStart = initialWindow.frameGeometry.x;
     this.padding = padding;
     this.addWindow(initialWindow);
@@ -26,15 +31,17 @@ export default class Column {
       y: window.y + this.padding,
     };
 
-    window.interactiveMoveResizeStepped.connect(() => {
-      window.frameGeometry = window.frameGeometry;
-    });
+    //TODO: This might be stopping grow shortcut
+    // window.interactiveMoveResizeStepped.connect(() => {
+    //   window.frameGeometry = window.frameGeometry;
+    // });
 
-    window.frameGeometryChanged.connect((oldGeometry) => {
-      if (window.move) window.frameGeometry = oldGeometry;
-    });
+    // window.frameGeometryChanged.connect((oldGeometry) => {
+    //   if (window.move) window.frameGeometry = oldGeometry;
+    // });
 
     this.windows.push(window);
+    this.maximize();
   }
 
   deleteWindow(newWindow: KWin.AbstractClient) {
@@ -64,7 +71,7 @@ export default class Column {
 
   //This function maximizes the column by using the screen the least amount of area. This avoids including panels at the top or bottom. Some vlaues have to be the currentScreenGeometry and some have to be the leastAreaGeometry. Calcuations for handling panels on the left or right will need to be done in the future
   maximize(): QRect["x"] | void {
-    //Screen with least amount of area geometry
+    //Screen with least amount of area geometrtody
     const leastAreaGeometry = maxArea();
 
     //Current Screen Geometry
@@ -84,6 +91,37 @@ export default class Column {
     this.xPosStart = currentScreenGeometry.x;
     this.width = currentScreenGeometry.width;
     return currentScreenGeometry.width;
+  }
+
+  setWidth(newWidth: number) {
+    const difference = newWidth - this.width;
+    const columns = workspace.__globals.getColumnsSortedByXPos();
+
+    let columnFound = false;
+    for (const column of columns) {
+      if (column === this) columnFound = true;
+
+      if (!columnFound) continue;
+
+      const windows = column.windows;
+
+      for (const window of windows) {
+        if (column === this) {
+          //Every other value should be the same, except for the width, and we still substract twice the padding
+          window.frameGeometry = {
+            x: window.x,
+            //This calculation should work for the current column and every other column to the right
+            width: newWidth - this.padding * 2,
+            height: window.height,
+            y: window.y,
+          };
+
+          this.width = newWidth;
+        } else {
+          column.setXPos(column.xPosStart + difference);
+        }
+      }
+    }
   }
 
   getXPosEnd() {

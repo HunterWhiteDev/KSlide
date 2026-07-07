@@ -195,6 +195,22 @@ export const initShortcuts = () => {
     column.setXPos(swapColumn.getXPosEnd());
   };
 
+  const increaseWidth = () => {
+    const columnResponse = workspace.__globals.getColumnWithActiveWindow();
+    if (!columnResponse) return;
+    const [column, index] = columnResponse;
+    column.setWidth(column.width + 75);
+  };
+  const decreaseWidth = () => {
+    const columnResponse = workspace.__globals.getColumnWithActiveWindow();
+    if (!columnResponse) return;
+    const [column, index] = columnResponse;
+    column.setWidth(column.width - 75);
+  };
+
+  registerShortcut("Increase Width", "", "Meta+E", increaseWidth);
+  registerShortcut("Decrease Width", "", "Meta+W", decreaseWidth);
+
   registerShortcut(
     "Focus left",
     "Focuses the next window to the left",
