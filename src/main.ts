@@ -1,4 +1,5 @@
 import Column from "./Column";
+import maxArea from "./utils/maxArea";
 import Grid from "./Grid";
 import { initShortcuts } from "./KeyboardShortcuts";
 
@@ -34,9 +35,8 @@ workspace["__globals"] = {
   grid,
 };
 
-print("GLOBALS:  ", workspace.__globals);
-
 const main = () => {
+  const leastMaxArea = maxArea();
   const stackingOrder = workspace.stackingOrder;
   let prevWindowXPos: number = 0;
   for (let i = stackingOrder.length - 1; i >= 0; i--) {
@@ -49,20 +49,14 @@ const main = () => {
       const activeScreen = workspace.activeScreen;
       newXPos = activeScreen.geometry.x;
     } else {
-      newXPos = prevWindowXPos - window.width;
+      newXPos = prevWindowXPos - leastMaxArea.width;
     }
 
     window.minimized = false;
-    window.frameGeometry = {
-      x: newXPos,
-      y: window.y,
-      width: window.width,
-      height: window.height,
-    };
 
     prevWindowXPos = newXPos;
 
-    const column = new Column(window, padding);
+    const column = new Column(window, padding, newXPos);
 
     grid.columns.push(column);
   }
@@ -80,14 +74,7 @@ const addWindow = (newWindow: KWin.AbstractClient) => {
 
   const newWindowXPos = lastColumn.getXPosEnd();
 
-  newWindow.frameGeometry = {
-    width: newWindow.width,
-    height: newWindow.height,
-    x: newWindowXPos,
-    y: newWindow.y,
-  };
-
-  grid.columns.push(new Column(newWindow, padding));
+  grid.columns.push(new Column(newWindow, padding, newWindowXPos));
 };
 
 const removeWindow = (removedWindow: KWin.AbstractClient) => {
@@ -133,7 +120,6 @@ const removeWindow = (removedWindow: KWin.AbstractClient) => {
 
     grid.columns = [...newGridArrayFirstHalf, ...newGridArrayEndHalf];
     for (const col of grid.columns) {
-      print("KS: ", col.windows.length);
     }
 
     let windowToFocus;
@@ -144,7 +130,6 @@ const removeWindow = (removedWindow: KWin.AbstractClient) => {
     }
 
     workspace.activeWindow = windowToFocus;
-    print("KS: RAN");
   } else {
     //This will probably need to be more programtically smart in the future
     workspace.activeWindow = column.windows[windows.length - 1];
@@ -153,5 +138,3 @@ const removeWindow = (removedWindow: KWin.AbstractClient) => {
 
 workspace.windowAdded.connect(addWindow);
 workspace.windowRemoved.connect(removeWindow);
-
-print("done");
