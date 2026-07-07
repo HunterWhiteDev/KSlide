@@ -20,7 +20,7 @@ export default class Column {
   ) {
     const leastAreaGeometry = maxArea();
 
-    this.width = 1700;
+    this.width = leastAreaGeometry.width;
     this.xPosStart = xPosStart;
     this.padding = padding;
 
