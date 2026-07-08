@@ -172,7 +172,7 @@ const windowActivated = (window: KWin.AbstractClient) => {
   print("KS: ", difference);
   print("KS: ", "FOCUSING");
 
-  if (Math.sign(difference) === -1) {
+  if (Math.sign(column.xPosStart) === -1) {
     for (const column of columns) {
       column.setXPos(column.xPosStart + Math.abs(difference));
     }
