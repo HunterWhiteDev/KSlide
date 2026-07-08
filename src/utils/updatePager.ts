@@ -1,0 +1,28 @@
+export default function updatePager() {
+  const columns = workspace.__globals.getColumnsSortedByXPos();
+
+  let data = [];
+  for (const column of columns) {
+    data.push({
+      xPosStart: column.xPosStart,
+      windows: column.windows.map((window: KWin.AbstractClient) => {
+        return {
+          resourceName: window.resourceName,
+          desktopFileName: window.desktopFileName,
+          caption: window.caption,
+        };
+      }),
+      xPosEnd: column.getXPosEnd(),
+    });
+  }
+
+  print("calling dbus");
+
+  callDBus(
+    "dev.hunterwhite.pager",
+    "/change",
+    "dev.hunterwhite.pager",
+    "pass",
+    JSON.stringify({ data }),
+  );
+}

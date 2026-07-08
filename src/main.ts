@@ -2,11 +2,18 @@ import Column from "./Column";
 import maxArea from "./utils/maxArea";
 import Grid from "./Grid";
 import { initShortcuts } from "./KeyboardShortcuts";
+import updatePager from "./utils/updatePager";
 
 const grid = new Grid();
 const padding = 8;
 
-const exlcludeList = ["org.kde.plasmashell", "krunner", "org.kde.spectacle"];
+const exlcludeList = [
+  "org.kde.plasmashell",
+  "krunner",
+  "org.kde.spectacle",
+  "plasmashell",
+  "",
+];
 
 function getColumnsSortedByXPos(): Column[] {
   return workspace.__globals.grid.columns.sort((a, b) => {
@@ -33,6 +40,7 @@ workspace["__globals"] = {
   getColumnsSortedByXPos,
   padding,
   grid,
+  autoFocus: true,
 };
 
 const main = () => {
@@ -41,8 +49,9 @@ const main = () => {
   let prevWindowXPos: number = 0;
   for (let i = stackingOrder.length - 1; i >= 0; i--) {
     const window = stackingOrder[i];
+    if (exlcludeList.includes(window.resourceName)) continue;
 
-    if (window.resourceName === "plasmashell") continue;
+    print("KS: ", window.resourceName);
 
     let newXPos;
     if (window.active) {
@@ -61,14 +70,27 @@ const main = () => {
     grid.columns.push(column);
   }
 
+  updatePager();
   initShortcuts();
 };
 main();
 
 //TODO: Make this function add the new column of the last column's width + padding
 const addWindow = (newWindow: KWin.AbstractClient) => {
-  if (exlcludeList.includes(newWindow.resourceClass)) return;
+  if (exlcludeList.includes(newWindow.resourceName)) return;
   if (!newWindow.normalWindow) return;
+
+  print("INFO");
+  print(JSON.stringify(newWindow));
+  print(
+    newWindow.resourceName,
+    " ",
+    newWindow.resourceClass,
+    " ",
+    newWindow.caption,
+  );
+  print("INFO");
+
   const columns = workspace.__globals.getColumnsSortedByXPos();
   const lastColumn = columns[columns.length - 1];
 
@@ -136,5 +158,31 @@ const removeWindow = (removedWindow: KWin.AbstractClient) => {
   }
 };
 
+const windowActivated = (window: KWin.AbstractClient) => {
+  if (!workspace.__globals.autoFocus) return;
+  if (exlcludeList.includes(window.resourceName)) return;
+  print("KS: rc: ", window.resourceClass);
+  const columnResponse = getColumnWithActiveWindow();
+  if (!columnResponse) return;
+  const [column] = columnResponse;
+  const columns = getColumnsSortedByXPos();
+  const screenGeometry = workspace.activeScreen.geometry;
+
+  const difference = screenGeometry.x - column.xPosStart;
+  print("KS: ", difference);
+  print("KS: ", "FOCUSING");
+
+  if (Math.sign(difference) === -1) {
+    for (const column of columns) {
+      column.setXPos(column.xPosStart + Math.abs(difference));
+    }
+  } else {
+    for (const column of columns) {
+      column.setXPos(column.xPosStart - Math.abs(difference));
+    }
+  }
+};
+
+workspace.windowActivated.connect(windowActivated);
 workspace.windowAdded.connect(addWindow);
 workspace.windowRemoved.connect(removeWindow);

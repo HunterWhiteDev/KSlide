@@ -1,9 +1,9 @@
 import Column from "./Column";
+import updatePager from "./utils/updatePager";
 
 export const initShortcuts = () => {
-  const grid = workspace.__globals.grid;
-
   const focusLeft = () => {
+    workspace.__globals.autoFocus = false;
     const columns = workspace.__globals.getColumnsSortedByXPos();
 
     const columnResponse = workspace.__globals.getColumnWithActiveWindow();
@@ -52,9 +52,13 @@ export const initShortcuts = () => {
         column.setXPos(newXPos);
       }
     }
+
+    workspace.__globals.autoFocus = true;
+    updatePager();
   };
 
   const focusRight = () => {
+    workspace.__globals.autoFocus = false;
     const columns = workspace.__globals.getColumnsSortedByXPos();
 
     const columnResponse = workspace.__globals.getColumnWithActiveWindow();
@@ -95,6 +99,9 @@ export const initShortcuts = () => {
         column.setXPos(newXPos);
       }
     }
+
+    workspace.__globals.autoFocus = true;
+    updatePager();
   };
 
   const shiftViewLeft = () => {
@@ -135,6 +142,7 @@ export const initShortcuts = () => {
   //2) Makes every other column grow or shrink depending on what size columns to the left or right need to change by
   const maxSpace = () => {
     try {
+      const columns = workspace.__globals.getColumnsSortedByXPos();
       const columnResponse = workspace.__globals.getColumnWithActiveWindow();
 
       if (!columnResponse) return print("No column found");
@@ -152,10 +160,10 @@ export const initShortcuts = () => {
       const leftDifference = newXPostStart - oldXPosStart;
       const rightDifference = newXposEnd - oldXPosEnd;
 
-      for (let i = 0; i < grid.columns.length; i++) {
+      for (let i = 0; i < columns.length; i++) {
         if (i === index) continue;
 
-        const column: Column = grid.columns[i];
+        const column: Column = columns[i];
 
         if (i < index) {
           column.setXPos(column.xPosStart + leftDifference);
