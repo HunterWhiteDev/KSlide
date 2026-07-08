@@ -7,6 +7,7 @@ export declare global {
   namespace KWin {
     interface QtScriptWorkspaceWrapper {
       __globals: {
+        autoFocus: boolean;
         getColumnWithActiveWindow: () => [Column, index] | null;
         getColumnsSortedByXPos(): Column[];
         grid: Grid;
@@ -17,6 +18,7 @@ export declare global {
       activeWindow: KWin.AbstractClient;
       screens: Output[];
       windowAdded: Signal<(window: KWin.AbstractClient) => void>;
+      windowActivated: Signal<(window: KWin.AbstractClient) => void>;
       windowRemoved: Signal<(window: KWin.AbstractClient) => void>;
       currentDesktop: VirtualDesktop;
     }
