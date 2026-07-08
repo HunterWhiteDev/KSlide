@@ -8,8 +8,9 @@ Sizing strategy:
 3. Get the max area, and set windows width, height, and y, to the leastMaxArea
 4. Make sure this is done seperately outside of the window.add() function. Probably just in the constructor
 
-4) Window Pager. Add XPos, ResurceClass, and columns windows per column. When you do this, get rid of the annoying logs the spam journalctl and kwin grep
+4) Window Pager. Add XPos, ResurceClass, and columns windows per column. When you do this, get rid of the annoying logs the spam journalctl and kwin grep -- DONE
    This will help with debugging the below ->
+
 5) Figure out why sometimes it completely loses focus.
    Its possible this is because a window becomes out of focus then no window is returned by the getColumnWithActiveWindow() function
 
