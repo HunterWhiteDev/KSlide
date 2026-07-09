@@ -50,6 +50,8 @@ const main = () => {
   for (let i = stackingOrder.length - 1; i >= 0; i--) {
     const window = stackingOrder[i];
     if (exlcludeList.includes(window.resourceName)) continue;
+    if (window.skipSwitcher) continue;
+    if (!window.normalWindow) continue;
 
     print("KS: ", window.resourceName);
 
@@ -79,6 +81,7 @@ main();
 const addWindow = (newWindow: KWin.AbstractClient) => {
   if (exlcludeList.includes(newWindow.resourceName)) return;
   if (!newWindow.normalWindow) return;
+  if (newWindow.skipSwitcher) return;
 
   print("INFO");
   print(JSON.stringify(newWindow));
@@ -168,7 +171,7 @@ const windowActivated = (window: KWin.AbstractClient) => {
   const columns = getColumnsSortedByXPos();
   const screenGeometry = workspace.activeScreen.geometry;
 
-  const difference = screenGeometry.x - column.xPosStart;
+  const difference = screenGeometry.x + padding - column.xPosStart;
   print("KS: ", difference);
   print("KS: ", "FOCUSING");
 
@@ -183,6 +186,6 @@ const windowActivated = (window: KWin.AbstractClient) => {
   }
 };
 
-workspace.windowActivated.connect(windowActivated);
+// workspace.windowActivated.connect(windowActivated);
 workspace.windowAdded.connect(addWindow);
 workspace.windowRemoved.connect(removeWindow);
