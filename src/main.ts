@@ -49,7 +49,11 @@ const main = () => {
   let prevWindowXPos: number = 0;
   for (let i = stackingOrder.length - 1; i >= 0; i--) {
     const window = stackingOrder[i];
-    if (exlcludeList.includes(window.resourceName)) continue;
+    if (
+      exlcludeList.includes(window.resourceName) ||
+      exlcludeList.includes(window.resourceClass)
+    )
+      continue;
     if (window.skipSwitcher) continue;
     if (!window.normalWindow) continue;
 
@@ -79,9 +83,15 @@ main();
 
 //TODO: Make this function add the new column of the last column's width + padding
 const addWindow = (newWindow: KWin.AbstractClient) => {
-  if (exlcludeList.includes(newWindow.resourceName)) return;
+  if (
+    exlcludeList.includes(newWindow.resourceName) ||
+    exlcludeList.includes(newWindow.resourceClass)
+  )
+    return;
+  if (!newWindow.resourceName || !newWindow.resourceClass) return;
   if (!newWindow.normalWindow) return;
   if (newWindow.skipSwitcher) return;
+  print(JSON.stringify(newWindow));
 
   print("INFO");
   print(JSON.stringify(newWindow));
@@ -100,6 +110,7 @@ const addWindow = (newWindow: KWin.AbstractClient) => {
   const newWindowXPos = lastColumn.getXPosEnd();
 
   grid.columns.push(new Column(newWindow, padding, newWindowXPos));
+  updatePager();
 };
 
 const removeWindow = (removedWindow: KWin.AbstractClient) => {
@@ -159,6 +170,7 @@ const removeWindow = (removedWindow: KWin.AbstractClient) => {
     //This will probably need to be more programtically smart in the future
     workspace.activeWindow = column.windows[windows.length - 1];
   }
+  updatePager();
 };
 
 const windowActivated = (window: KWin.AbstractClient) => {
