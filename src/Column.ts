@@ -1,4 +1,5 @@
 import maxArea from "./utils/maxArea";
+import updatePager from "./utils/updatePager";
 
 // function frameGeometryChange(window: KWin.AbstractClient, oldGeometry: QRect) {
 // if(window.move)
@@ -44,6 +45,22 @@ export default class Column {
       height: window.height - this.padding * 2,
       y: window.y + this.padding,
     };
+
+    window.minimizedChanged.connect(() => {
+      if (window.minimized) this.deleteWindow(window);
+      else {
+        const columns = workspace.__globals.getColumnsSortedByXPos();
+        const lastColumn = columns[columns.length - 1];
+        const col = new Column(
+          window,
+          workspace.__globals.padding,
+          lastColumn.getXPosEnd(),
+        );
+
+        workspace.__globals.grid.columns.push(col);
+      }
+      updatePager();
+    });
 
     //TODO: This might be stopping grow shortcut
     // window.interactiveMoveResizeStepped.connect(() => {
