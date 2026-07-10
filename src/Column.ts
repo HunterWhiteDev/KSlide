@@ -25,26 +25,23 @@ export default class Column {
     this.xPosStart = xPosStart;
     this.padding = padding;
 
-    const geometry = {
+    this.addWindow(initialWindow);
+  }
+
+  addWindow(window: KWin.AbstractClient) {
+    const leastAreaGeometry = maxArea();
+
+    //Apply correct geometry with padding to window
+    window.frameGeometry = {
       width: this.width - this.padding * 2,
       height: leastAreaGeometry.height - this.padding * 2,
       x: this.xPosStart + this.padding,
       y: leastAreaGeometry.y + this.padding,
     };
 
-    initialWindow.frameGeometry = geometry;
-
-    this.windows.push(initialWindow);
-  }
-
-  addWindow(window: KWin.AbstractClient) {
-    //Apply correct geometry with padding to window
-    window.frameGeometry = {
-      x: this.xPosStart + this.padding,
-      width: this.width - this.padding * 2,
-      height: window.height - this.padding * 2,
-      y: window.y + this.padding,
-    };
+    if (!window.resizeable) {
+      this.width = window.width + this.padding;
+    }
 
     window.minimizedChanged.connect(() => {
       if (window.minimized) this.deleteWindow(window);
@@ -59,6 +56,7 @@ export default class Column {
 
         workspace.__globals.grid.columns.push(col);
       }
+
       updatePager();
     });
 
@@ -72,6 +70,7 @@ export default class Column {
     // });
 
     this.windows.push(window);
+    updatePager();
   }
 
   deleteWindow(newWindow: KWin.AbstractClient) {
