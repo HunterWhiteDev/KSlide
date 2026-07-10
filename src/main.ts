@@ -13,6 +13,7 @@ const exlcludeList = [
   "org.kde.spectacle",
   "plasmashell",
   "",
+  "xdg-desktop-portal-kde",
 ];
 
 function getColumnsSortedByXPos(): Column[] {
@@ -43,44 +44,6 @@ workspace["__globals"] = {
   autoFocus: true,
 };
 
-const main = () => {
-  const leastMaxArea = maxArea();
-  const stackingOrder = workspace.stackingOrder;
-  let prevWindowXPos: number = 0;
-  for (let i = stackingOrder.length - 1; i >= 0; i--) {
-    const window = stackingOrder[i];
-    if (
-      exlcludeList.includes(window.resourceName) ||
-      exlcludeList.includes(window.resourceClass)
-    )
-      continue;
-    if (window.skipSwitcher) continue;
-    if (!window.normalWindow) continue;
-
-    print("KS: ", window.resourceName);
-
-    let newXPos;
-    if (window.active) {
-      const activeScreen = workspace.activeScreen;
-      newXPos = activeScreen.geometry.x;
-    } else {
-      newXPos = prevWindowXPos - leastMaxArea.width;
-    }
-
-    window.minimized = false;
-
-    prevWindowXPos = newXPos;
-
-    const column = new Column(window, padding, newXPos);
-
-    grid.columns.push(column);
-  }
-
-  updatePager();
-  initShortcuts();
-};
-main();
-
 //TODO: Make this function add the new column of the last column's width + padding
 const addWindow = (newWindow: KWin.AbstractClient) => {
   if (
@@ -91,23 +54,21 @@ const addWindow = (newWindow: KWin.AbstractClient) => {
   if (!newWindow.resourceName || !newWindow.resourceClass) return;
   if (!newWindow.normalWindow) return;
   if (newWindow.skipSwitcher) return;
-  print(JSON.stringify(newWindow));
+  if (newWindow.transient) return;
+  if (!newWindow.resizeable) return;
 
-  print("INFO");
   print(JSON.stringify(newWindow));
-  print(
-    newWindow.resourceName,
-    " ",
-    newWindow.resourceClass,
-    " ",
-    newWindow.caption,
-  );
-  print("INFO");
 
   const columns = workspace.__globals.getColumnsSortedByXPos();
-  const lastColumn = columns[columns.length - 1];
 
-  const newWindowXPos = lastColumn.getXPosEnd();
+  let newWindowXPos;
+  if (!columns.length) {
+    newWindowXPos = newWindow.frameGeometry.x;
+  } else {
+    const lastColumn = columns[columns.length - 1];
+
+    newWindowXPos = lastColumn.getXPosEnd();
+  }
 
   grid.columns.push(new Column(newWindow, padding, newWindowXPos));
   updatePager();
@@ -201,3 +162,16 @@ const windowActivated = (window: KWin.AbstractClient) => {
 // workspace.windowActivated.connect(windowActivated);
 workspace.windowAdded.connect(addWindow);
 workspace.windowRemoved.connect(removeWindow);
+
+const main = () => {
+  const stackingOrder = workspace.stackingOrder;
+  for (let i = stackingOrder.length - 1; i >= 0; i--) {
+    const window = stackingOrder[i];
+    print(JSON.stringify(window.caption), "\n");
+    addWindow(window);
+  }
+
+  updatePager();
+  initShortcuts();
+};
+main();
