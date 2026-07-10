@@ -56,6 +56,11 @@ const addWindow = (newWindow: KWin.AbstractClient) => {
   if (newWindow.skipSwitcher) return;
   if (newWindow.transient) return;
   if (!newWindow.resizeable) return;
+  if (
+    newWindow.frameGeometry.width === 0 ||
+    newWindow.frameGeometry.height === 0
+  )
+    return;
 
   print(JSON.stringify(newWindow));
 
