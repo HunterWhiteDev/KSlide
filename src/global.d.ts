@@ -10,6 +10,8 @@ export declare global {
         autoFocus: boolean;
         getColumnWithActiveWindow: () => [Column, index] | null;
         getColumnsSortedByXPos(): Column[];
+        getTotalWidth(): number;
+        getColumnWithWindow(window: KWin.AbstractClient): Column | null;
         grid: Grid;
         padding: number;
       };

@@ -16,8 +16,6 @@ export default function updatePager() {
     });
   }
 
-  print("calling dbus");
-
   callDBus(
     "dev.hunterwhite.pager",
     "/change",

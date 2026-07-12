@@ -1,9 +1,6 @@
 import maxArea from "./utils/maxArea";
 import updatePager from "./utils/updatePager";
 
-// function frameGeometryChange(window: KWin.AbstractClient, oldGeometry: QRect) {
-// if(window.move)
-// };
 export default class Column {
   width: number;
   xPosStart: number;
@@ -43,31 +40,14 @@ export default class Column {
       this.width = window.width + this.padding;
     }
 
-    window.minimizedChanged.connect(() => {
-      if (window.minimized) this.deleteWindow(window);
-      else {
-        const columns = workspace.__globals.getColumnsSortedByXPos();
-        const lastColumn = columns[columns.length - 1];
-        const col = new Column(
-          window,
-          workspace.__globals.padding,
-          lastColumn.getXPosEnd(),
-        );
-
-        workspace.__globals.grid.columns.push(col);
-      }
-
-      updatePager();
+    //TODO: This might be stopping grow shortcut
+    window.interactiveMoveResizeStepped.connect(() => {
+      window.frameGeometry = window.frameGeometry;
     });
 
-    //TODO: This might be stopping grow shortcut
-    // window.interactiveMoveResizeStepped.connect(() => {
-    //   window.frameGeometry = window.frameGeometry;
-    // });
-
-    // window.frameGeometryChanged.connect((oldGeometry) => {
-    //   if (window.move) window.frameGeometry = oldGeometry;
-    // });
+    window.frameGeometryChanged.connect((oldGeometry) => {
+      if (window.move) window.frameGeometry = oldGeometry;
+    });
 
     this.windows.push(window);
     updatePager();
