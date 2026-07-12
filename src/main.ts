@@ -1,8 +1,10 @@
 import Column from "./Column";
-import maxArea from "./utils/maxArea";
 import Grid from "./Grid";
 import { initShortcuts } from "./KeyboardShortcuts";
 import updatePager from "./utils/updatePager";
+import getTotalWidth from "./utils/getTotalWidth";
+import getColumnWithWindow from "./utils/getColumnWithWindow";
+import toalWidth from "./utils/getTotalWidth";
 
 const grid = new Grid();
 const padding = 8;
@@ -14,6 +16,7 @@ const exlcludeList = [
   "plasmashell",
   "",
   "xdg-desktop-portal-kde",
+  "undefined",
 ];
 
 function getColumnsSortedByXPos(): Column[] {
@@ -39,12 +42,18 @@ function getColumnWithActiveWindow(): [Column, number] | null {
 workspace["__globals"] = {
   getColumnWithActiveWindow,
   getColumnsSortedByXPos,
+  getColumnWithWindow,
   padding,
   grid,
   autoFocus: true,
+  getTotalWidth,
 };
 
-//TODO: Make this function add the new column of the last column's width + padding
+function handleMinimizedChange(window: KWin.AbstractClient) {
+  if (window.minimized) removeWindow(window);
+  else addWindow(window);
+}
+
 const addWindow = (newWindow: KWin.AbstractClient) => {
   if (
     exlcludeList.includes(newWindow.resourceName) ||
@@ -62,8 +71,6 @@ const addWindow = (newWindow: KWin.AbstractClient) => {
   )
     return;
 
-  print(JSON.stringify(newWindow));
-
   const columns = workspace.__globals.getColumnsSortedByXPos();
 
   let newWindowXPos;
@@ -75,96 +82,102 @@ const addWindow = (newWindow: KWin.AbstractClient) => {
     newWindowXPos = lastColumn.getXPosEnd();
   }
 
-  grid.columns.push(new Column(newWindow, padding, newWindowXPos));
+  const newColumn = new Column(newWindow, padding, newWindowXPos);
+  workspace.__globals.grid.columns.push(newColumn);
+
+  const monitorWidth = toalWidth();
+  const columnXPosEnd = newColumn.getXPosEnd();
+  if (columnXPosEnd > monitorWidth) {
+    const difference = Math.abs(columnXPosEnd - monitorWidth);
+
+    for (let i = 0; i < columns.length; i++) {
+      const column = columns[i];
+      column.setXPos(column.xPosStart - difference);
+    }
+
+    //For some reason, the correct geometry was not applying on init unless this is called
+    newColumn.maximize();
+  }
+
+  newWindow.minimizedChanged.connect(() => handleMinimizedChange(newWindow));
+
   updatePager();
 };
 
 const removeWindow = (removedWindow: KWin.AbstractClient) => {
-  if (exlcludeList.includes(removedWindow.resourceClass)) return;
-
-  //Just make sure it's a normal window that did get added
-  let foundInList = false;
-  for (const col of grid.columns) {
-    for (const win of col.windows) {
-      if (removedWindow.internalId === win.internalId) foundInList = true;
-    }
-  }
-
-  if (!foundInList) return;
-
-  //Might have to manually filter where this was in the grid (hopefully not)
-  const columnResponse = getColumnWithActiveWindow();
-  if (!columnResponse) return;
-  const [column, index] = columnResponse;
-
+  const columnWithWindow = getColumnWithWindow(removedWindow);
+  if (!columnWithWindow) return;
   const columns = getColumnsSortedByXPos();
-  //First remove the window from the column
-  const windows = columns[index].windows;
 
-  const newWindows: KWin.AbstractClient[] = [];
-  for (const window of windows) {
-    if (window.internalId !== removedWindow.internalId) {
-      newWindows.push(window);
-    }
-  }
+  let removedColumnIdx = 0;
+  let found = false;
+  const newColumns = columns.filter((col, idx) => {
+    //Compares memory addres so should work fine. It's possible giving each column a UUID will be a better solution in the future
+    if (col === columnWithWindow) {
+      removedColumnIdx = idx;
+      found = true;
 
-  column.windows = newWindows;
+      if (removedColumnIdx === columns.length - 1) {
+        const nextColumnToFocus = columns[idx - 1];
 
-  if (column.windows.length === 0) {
-    const newGridArrayFirstHalf = columns.slice(0, index);
+        //If the column that is removed is the last one in thne row, we want to focus the last window in the oclumn to the left
+        const nextWindowToFocus =
+          nextColumnToFocus.windows[nextColumnToFocus.windows.length - 1];
+        workspace.activeWindow = nextWindowToFocus;
+      }
 
-    const newGridArrayEndHalf = columns.slice(index + 1, columns.length);
-
-    for (let i = index; i < columns.length; i++) {
-      const currentColumn = columns[i];
-      currentColumn.setXPos(currentColumn.xPosStart - column.width);
-    }
-
-    grid.columns = [...newGridArrayFirstHalf, ...newGridArrayEndHalf];
-    for (const col of grid.columns) {
+      return;
     }
 
-    let windowToFocus;
-    if (index === 0) {
-      windowToFocus = columns[index + 1].windows[0];
-    } else {
-      windowToFocus = columns[index - 1].windows[0];
+    //Found needs to be true, because if we only check if idx > removedColumnIdx, this will be true before we actually find the column we need
+    if (idx > removedColumnIdx && found) {
+      col.setXPos(col.xPosStart - columns[removedColumnIdx + 1].width);
     }
 
-    workspace.activeWindow = windowToFocus;
-  } else {
-    //This will probably need to be more programtically smart in the future
-    workspace.activeWindow = column.windows[windows.length - 1];
-  }
+    //As long as we didnt reach the condition where we are removing the last column, focus the window to the right
+    if (idx === removedColumnIdx + 1) {
+      workspace.activeWindow = col.windows[0];
+    }
+
+    return col;
+  });
+
+  workspace.__globals.grid.columns = newColumns as Column[];
+
   updatePager();
 };
 
+//This only scrolls when windowsAreFocused not currently on screen. Sliding over by the width of the window while within the total widht is handled by keyboard shortcuts
 const windowActivated = (window: KWin.AbstractClient) => {
-  if (!workspace.__globals.autoFocus) return;
-  if (exlcludeList.includes(window.resourceName)) return;
-  print("KS: rc: ", window.resourceClass);
-  const columnResponse = getColumnWithActiveWindow();
-  if (!columnResponse) return;
-  const [column] = columnResponse;
-  const columns = getColumnsSortedByXPos();
-  const screenGeometry = workspace.activeScreen.geometry;
+  const totalWidth = getTotalWidth();
+  //Which way the windows will scroll, Left = all windows decrease XPosStart. Right = all windows increase XPosStart
+  let scrollDirection: "LEFT" | "RIGHT" | "NONE" = "NONE";
 
-  const difference = screenGeometry.x + padding - column.xPosStart;
-  print("KS: ", difference);
-  print("KS: ", "FOCUSING");
+  const column = getColumnWithWindow(window);
+  if (!column) return;
 
-  if (Math.sign(column.xPosStart) === -1) {
-    for (const column of columns) {
-      column.setXPos(column.xPosStart + Math.abs(difference));
-    }
+  if (column?.getXPosEnd() > getTotalWidth()) scrollDirection = "LEFT";
+  else if (column.xPosStart < 0) scrollDirection = "RIGHT";
+
+  let scrollDifference: number = 0;
+
+  if (scrollDirection === "LEFT") {
+    scrollDifference = column.getXPosEnd() - totalWidth;
   } else {
-    for (const column of columns) {
-      column.setXPos(column.xPosStart - Math.abs(difference));
-    }
+    scrollDifference = column.xPosStart;
+  }
+
+  const columns = getColumnsSortedByXPos();
+
+  for (const col of columns) {
+    if (scrollDirection === "LEFT")
+      col.setXPos(col.xPosStart - scrollDifference);
+    else if (scrollDirection === "RIGHT")
+      col.setXPos(col.xPosStart + Math.abs(scrollDifference));
   }
 };
 
-// workspace.windowActivated.connect(windowActivated);
+workspace.windowActivated.connect(windowActivated);
 workspace.windowAdded.connect(addWindow);
 workspace.windowRemoved.connect(removeWindow);
 
@@ -172,7 +185,6 @@ const main = () => {
   const stackingOrder = workspace.stackingOrder;
   for (let i = stackingOrder.length - 1; i >= 0; i--) {
     const window = stackingOrder[i];
-    print(JSON.stringify(window.caption), "\n");
     addWindow(window);
   }
 
