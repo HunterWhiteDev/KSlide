@@ -3,57 +3,64 @@ import updatePager from "./utils/updatePager";
 
 export const initShortcuts = () => {
   const focusLeft = () => {
-    workspace.__globals.autoFocus = false;
     const columns = workspace.__globals.getColumnsSortedByXPos();
 
     const columnResponse = workspace.__globals.getColumnWithActiveWindow();
     if (!columnResponse) return;
+
     const [activeColumn, index] = columnResponse;
 
-    let newActiveColumn;
     let newActiveWindow;
 
-    let willScrollFirstItem = false;
+    const maxWidth = workspace.__globals.getTotalWidth();
 
-    let scrollOffset = 0;
+    //Logic for the first column has different conditions
     if (index === 0) {
-      //Total horizontal space
-      let maxWidth = 0;
-      for (const output of workspace.screens) {
-        maxWidth += output.geometry.x;
+      if (!activeColumn.windows[0].active) {
+        //Last window is not focused, so one must be focused
+        let idx = 0;
+        for (const window of activeColumn.windows) {
+          if (window.active) {
+            newActiveWindow = activeColumn.windows[idx - 1];
+            break;
+          }
+        }
+      } else {
+        //First window is focused, we only need to scroll
+        //First check if window will go offscreen. If it will, don't scroll.
+        //
+
+        if (
+          activeColumn.xPosStart +
+          activeColumn.width +
+          workspace.__globals.padding >
+          maxWidth
+        )
+          return;
+
+        for (const col of columns) {
+          col.setXPos(col.xPosStart + activeColumn.width);
+        }
       }
-
-      //On my machine, it was let me scroll over one window width worth out of view. So it made conceptual sense to substract the columnWidth.
-      const distanceLeftToScroll =
-        maxWidth - activeColumn.xPosStart - activeColumn.width;
-
-      if (distanceLeftToScroll >= activeColumn.width) {
-        scrollOffset = activeColumn.width;
-      }
-
-      willScrollFirstItem = true;
     } else {
-      newActiveColumn = columns[index - 1];
-      newActiveWindow = newActiveColumn.windows[0];
-      scrollOffset = Math.abs(
-        activeColumn.xPosStart - newActiveColumn.xPosStart,
-      );
-
-      workspace.activeWindow = newActiveWindow;
-    }
-
-    if (newActiveColumn?.xPosStart < 0 || willScrollFirstItem) {
-      for (let i = 0; i < columns.length; i++) {
-        const column = columns[i];
-        //Find the difference first, THEN, add that to the currentXPos of the currnet column we iterate over
-
-        const newXPos = column.xPosStart + scrollOffset;
-
-        column.setXPos(newXPos);
+      if (activeColumn.windows.length === 1) {
+        const newColumn = columns[index - 1];
+        newActiveWindow = newColumn.windows[0];
+      } else {
+        let idx = 0;
+        for (const window of activeColumn.windows) {
+          if (window.active) {
+            newActiveWindow = activeColumn.windows[idx + 1];
+            break;
+          }
+          idx++;
+        }
       }
+
+      //Scrolling will be handled windowActivatedSignal
+      workspace.activeWindow = newActiveWindow as KWin.AbstractClient;
     }
 
-    workspace.__globals.autoFocus = true;
     updatePager();
   };
 
@@ -63,44 +70,50 @@ export const initShortcuts = () => {
 
     const columnResponse = workspace.__globals.getColumnWithActiveWindow();
     if (!columnResponse) return;
+
     const [activeColumn, index] = columnResponse;
 
-    let newActiveColumn;
     let newActiveWindow;
 
-    let willScrollLastItem = false;
-
-    let scrollOffset = 0;
+    //Logic for the last column has different conditions
     if (index === columns.length - 1) {
-      if (activeColumn.xPosStart >= activeColumn.width) {
-        scrollOffset = activeColumn.width;
+      if (!activeColumn.windows[activeColumn.windows.length - 1].active) {
+        //Last window is not focused, so one must be focused
+        let idx = 0;
+        for (const window of activeColumn.windows) {
+          if (window.active) {
+            newActiveWindow = activeColumn.windows[idx + 1];
+            break;
+          }
+        }
+      } else {
+        //Last window is focused, we only need to scroll
+        //First check if window will go offscreen. If it will, don't scroll.
+        if (activeColumn.xPosStart - activeColumn.width < 0) return;
+
+        for (const col of columns) {
+          col.setXPos(col.xPosStart - activeColumn.width);
+        }
       }
-      willScrollLastItem = true;
     } else {
-      newActiveColumn = columns[index + 1];
-      newActiveWindow = newActiveColumn.windows[0];
-      scrollOffset = Math.abs(
-        newActiveColumn.xPosStart - activeColumn.xPosStart,
-      );
-
-      workspace.activeWindow = newActiveWindow;
-    }
-
-    let maxWidth = 0;
-    for (const output of workspace.screens) {
-      maxWidth += output.geometry.x;
-    }
-
-    if (newActiveColumn?.getXPosEnd() > maxWidth || willScrollLastItem) {
-      for (let i = 0; i < columns.length; i++) {
-        const column = columns[i];
-
-        const newXPos = column.xPosStart - scrollOffset;
-        column.setXPos(newXPos);
+      if (activeColumn.windows.length === 1) {
+        const newColumn = columns[index + 1];
+        newActiveWindow = newColumn.windows[0];
+      } else {
+        let idx = 0;
+        for (const window of activeColumn.windows) {
+          if (window.active) {
+            newActiveWindow = activeColumn.windows[idx + 1];
+            break;
+          }
+          idx++;
+        }
       }
+
+      //Scrolling will be handled windowActivatedSignal
+      workspace.activeWindow = newActiveWindow as KWin.AbstractClient;
     }
 
-    workspace.__globals.autoFocus = true;
     updatePager();
   };
 
@@ -187,6 +200,13 @@ export const initShortcuts = () => {
     const swapColumn = columns[index - 1];
     column.setXPos(swapColumn.xPosStart);
     swapColumn.setXPos(column.getXPosEnd());
+
+    if (column.getXPosEnd() < 0 + workspace.__globals.padding) {
+      const difference = Math.abs(column.xPosStart - 0);
+      for (const column of columns) {
+        column.setXPos(column.xPosStart + difference);
+      }
+    }
   };
 
   const swapRight = () => {
@@ -201,6 +221,14 @@ export const initShortcuts = () => {
     const swapColumn = columns[index + 1];
     swapColumn.setXPos(column.xPosStart);
     column.setXPos(swapColumn.getXPosEnd());
+
+    const maxWidth = workspace.__globals.getTotalWidth();
+    if (column.getXPosEnd() > maxWidth) {
+      const difference = Math.abs(column.getXPosEnd() - maxWidth);
+      for (const column of columns) {
+        column.setXPos(column.xPosStart - difference);
+      }
+    }
   };
 
   const increaseWidth = () => {
