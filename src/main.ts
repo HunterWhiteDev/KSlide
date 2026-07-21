@@ -53,7 +53,6 @@ function handleMinimizedChange(window: KWin.AbstractClient) {
   else addWindow(window);
 }
 
-//TODO: Make this function add the new column of the last column's width + padding
 const addWindow = (newWindow: KWin.AbstractClient) => {
   if (
     exlcludeList.includes(newWindow.resourceName) ||

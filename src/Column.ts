@@ -26,21 +26,31 @@ export default class Column {
   }
 
   addWindow(window: KWin.AbstractClient) {
+    this.windows.push(window);
+
     const leastAreaGeometry = maxArea();
 
-    //Apply correct geometry with padding to window
-    window.frameGeometry = {
-      width: this.width - this.padding * 2,
-      height: leastAreaGeometry.height - this.padding * 2,
-      x: this.xPosStart + this.padding,
-      y: leastAreaGeometry.y + this.padding,
-    };
+    const windowHeight =
+      leastAreaGeometry.height / this.windows.length - this.padding * 2;
 
-    if (!window.resizeable) {
-      this.width = window.width + this.padding;
+    //Apply correct geometry with padding to windows
+    let lastY = leastAreaGeometry.y;
+    for (let i = 0; i < this.windows.length; i++) {
+      const window = this.windows[i];
+      window.frameGeometry = {
+        width: this.width - this.padding * 2,
+        height: windowHeight,
+        x: this.xPosStart + this.padding,
+        y: lastY,
+      };
+
+      lastY = lastY + windowHeight;
     }
 
-    //TODO: This might be stopping grow shortcut
+    // if (!window.resizeable) {
+    //   this.width = window.width + this.padding;
+    // }
+
     window.interactiveMoveResizeStepped.connect(() => {
       window.frameGeometry = window.frameGeometry;
     });
@@ -49,7 +59,6 @@ export default class Column {
       if (window.move) window.frameGeometry = oldGeometry;
     });
 
-    this.windows.push(window);
     updatePager();
   }
 

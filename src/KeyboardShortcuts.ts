@@ -43,14 +43,14 @@ export const initShortcuts = () => {
         }
       }
     } else {
-      if (activeColumn.windows.length === 1) {
+      if (activeColumn.windows[0].active) {
         const newColumn = columns[index - 1];
-        newActiveWindow = newColumn.windows[0];
+        newActiveWindow = newColumn.windows[newColumn.windows.length - 1];
       } else {
         let idx = 0;
         for (const window of activeColumn.windows) {
           if (window.active) {
-            newActiveWindow = activeColumn.windows[idx + 1];
+            newActiveWindow = activeColumn.windows[idx - 1];
             break;
           }
           idx++;
@@ -76,7 +76,10 @@ export const initShortcuts = () => {
     let newActiveWindow;
 
     //Logic for the last column has different conditions
-    if (index === columns.length - 1) {
+    if (
+      index === columns.length - 1 &&
+      activeColumn.windows[activeColumn.windows.length - 1].active
+    ) {
       if (!activeColumn.windows[activeColumn.windows.length - 1].active) {
         //Last window is not focused, so one must be focused
         let idx = 0;
@@ -96,7 +99,7 @@ export const initShortcuts = () => {
         }
       }
     } else {
-      if (activeColumn.windows.length === 1) {
+      if (activeColumn.windows[activeColumn.windows.length - 1].active) {
         const newColumn = columns[index + 1];
         newActiveWindow = newColumn.windows[0];
       } else {
@@ -243,6 +246,95 @@ export const initShortcuts = () => {
     const [column, index] = columnResponse;
     column.setWidth(column.width - 75);
   };
+
+  //TODO: This function and focus right work fine. Focus left needs to be adjusted, and focus move toRightColumn need to be completed
+  //This function needs to do this:
+  //If the active window in in a column as at index 0, it needs to create a new column, and maximize itself and adjust the column it came from
+  //If it is the only window in the column, it needs to delete the current one, move it to the left, and size both accordingly. Maximize the one it was moved to and readjust the size of the one it came from
+  //If it is *not*  the only window, it needs to be moved to the column to the left, and resize both accordingly
+  const moveToLeftColumn = () => {
+    const columns = workspace.__globals.getColumnsSortedByXPos();
+    const columnResponse = workspace.__globals.getColumnWithActiveWindow();
+    if (!columnResponse) return;
+
+    let leftColumn;
+    let leftColIdx;
+    let currentColIdx;
+    let windowToMove;
+
+    const [activeColumn, index] = columnResponse;
+    leftColIdx = index - 1;
+    leftColumn = columns[leftColIdx];
+    currentColIdx = index;
+
+    for (const window of activeColumn.windows) {
+      if (window.active) windowToMove = window;
+    }
+
+    if (!windowToMove || !activeColumn || !currentColIdx || !leftColumn)
+      return print(
+        "moveToLeftReturned Early ",
+        JSON.stringify({
+          windowToMove,
+          activeColumn,
+          currentColIdx,
+          leftColumn,
+        }),
+      );
+
+    let skipColumnIndex = -1;
+
+    print(JSON.stringify({ currentColIdx, leftColIdx }));
+
+    //Intiial column has no windows left, Delete it and move the window over
+    if (currentColIdx === 0) {
+      const newCol = new Column(
+        windowToMove,
+        workspace.__globals.padding,
+        activeColumn.xPosStart - activeColumn.width,
+      );
+      newCol.maximize();
+      activeColumn.deleteWindow(windowToMove);
+      if (activeColumn.windows.length === 0) {
+        skipColumnIndex = currentColIdx;
+      }
+    } else {
+      //2 things can be true here: The current column may either have some windows or no windows after we remove the current one. We will handle both here
+      activeColumn.deleteWindow(windowToMove);
+      if (activeColumn.windows.length === 0) {
+        //Delete this column and move over window
+        leftColumn.addWindow(windowToMove);
+        skipColumnIndex = currentColIdx;
+        print("win length should be 0");
+      } else {
+        //Just move over the window and size both
+        leftColumn.addWindow(windowToMove);
+      }
+    }
+
+    const newColumns = [];
+    let scrollDifference = activeColumn.width;
+    for (let i = 0; i < columns.length; i++) {
+      //Skip column if it needs to be deleted
+      if (i === skipColumnIndex) continue;
+      const column = columns[i];
+      if (i > skipColumnIndex)
+        column.setXPos(column.xPosStart - scrollDifference);
+
+      newColumns.push(column);
+    }
+
+    workspace.__globals.grid.columns = newColumns;
+    print("fin");
+  };
+  const moveToRightColumn = () => { };
+
+  registerShortcut(
+    "Move current window to the left column",
+    "",
+    "Meta+H",
+    moveToLeftColumn,
+  );
 
   registerShortcut("Increase Width", "", "Meta+E", increaseWidth);
   registerShortcut("Decrease Width", "", "Meta+W", decreaseWidth);
