@@ -7,9 +7,10 @@ export default function updatePager() {
       xPosStart: column.xPosStart,
       windows: column.windows.map((window: KWin.AbstractClient) => {
         return {
-          resourceName: window.resourceName,
-          desktopFileName: window.desktopFileName,
-          caption: window.caption,
+          resourceName: window.resourceName || "",
+          desktopFileName: window.desktopFileName || "",
+          caption: window.caption || "",
+          active: window.active || false,
         };
       }),
       xPosEnd: column.getXPosEnd(),
