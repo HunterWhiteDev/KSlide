@@ -28,28 +28,30 @@ export default class Column {
   addWindow(window: KWin.AbstractClient) {
     this.windows.push(window);
 
+    print("X2: ", window.frameGeometry.x);
+
+    print("Col xstart: ", this.xPosStart);
+
     const leastAreaGeometry = maxArea();
 
-    const windowHeight =
-      leastAreaGeometry.height / this.windows.length - this.padding * 2;
+    const windowHeight = Math.floor(
+      leastAreaGeometry.height / this.windows.length - this.padding * 2,
+    );
 
     //Apply correct geometry with padding to windows
     let lastY = leastAreaGeometry.y;
-    for (let i = 0; i < this.windows.length; i++) {
-      const window = this.windows[i];
-      window.frameGeometry = {
+    for (const window of this.windows) {
+      const frameGeometry = {
         width: this.width - this.padding * 2,
         height: windowHeight,
         x: this.xPosStart + this.padding,
-        y: lastY,
+        y: Math.floor(lastY),
       };
+      window.frameGeometry = frameGeometry;
+      print(window.frameGeometry.x);
 
       lastY = lastY + windowHeight;
     }
-
-    // if (!window.resizeable) {
-    //   this.width = window.width + this.padding;
-    // }
 
     window.interactiveMoveResizeStepped.connect(() => {
       window.frameGeometry = window.frameGeometry;
