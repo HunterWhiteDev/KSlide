@@ -245,8 +245,6 @@ export const initShortcuts = () => {
     column.setWidth(column.width - 75);
   };
 
-  //TODO: Fix auto sizing on maximize and shift windows into correct position when they move
-
   //This function needs to do this:
   //If the active window in in a column as at index 0, it needs to create a new column, and maximize itself and adjust the column it came from
   //If it is the only window in the column, it needs to delete the current one, move it to the left, and size both accordingly. Maximize the one it was moved to and readjust the size of the one it came from
@@ -362,18 +360,18 @@ export const initShortcuts = () => {
       if (activeColumn.windows.length === 0) {
         //Delete this column and move over window
         workspace.__globals.removeColumnAtIndex(currentColIdx);
-        rightColumn.addWindow(windowToMove);
+        rightColumn.addWindow(windowToMove, 0);
       } else {
         //Just move over the window and size both
-        rightColumn.addWindow(windowToMove);
+        rightColumn.addWindow(windowToMove, 0);
       }
     }
 
     //Now, we rebuild the columns and skip the one the window came from if it is now empty
     const updatedColumns = workspace.__globals.getColumnsSortedByXPos();
 
-    if (currentColIdx === updatedColumns.length - 1) return;
-    for (let i = currentColIdx; i < 0; i--) {
+    if (currentColIdx === columns.length - 1) return;
+    for (let i = currentColIdx - 1; i >= 0; i--) {
       const col = updatedColumns[i];
       col.setXPos(col.xPosStart + activeColumn.width);
     }
