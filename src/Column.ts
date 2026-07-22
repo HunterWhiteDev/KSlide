@@ -25,22 +25,37 @@ export default class Column {
     this.addWindow(initialWindow);
   }
 
-  addWindow(window: KWin.AbstractClient) {
-    const leastAreaGeometry = maxArea();
-
-    //Apply correct geometry with padding to window
-    window.frameGeometry = {
-      width: this.width - this.padding * 2,
-      height: leastAreaGeometry.height - this.padding * 2,
-      x: this.xPosStart + this.padding,
-      y: leastAreaGeometry.y + this.padding,
-    };
-
-    if (!window.resizeable) {
-      this.width = window.width + this.padding;
+  addWindow(window: KWin.AbstractClient, index = -1) {
+    if (index > -1) {
+      const firstHalf = this.windows.slice(0, index);
+      const secondHalf = this.windows.slice(index, this.windows.length);
+      this.windows = [...firstHalf, window, ...secondHalf];
+    } else {
+      this.windows.push(window);
     }
 
-    //TODO: This might be stopping grow shortcut
+    print(this.windows.length);
+
+    const leastAreaGeometry = maxArea();
+
+    const windowHeight = Math.floor(
+      leastAreaGeometry.height / this.windows.length - this.padding * 2,
+    );
+
+    //Apply correct geometry with padding to windows
+    let lastY = leastAreaGeometry.y;
+    for (const window of this.windows) {
+      const frameGeometry = {
+        width: this.width - this.padding * 2,
+        height: windowHeight,
+        x: this.xPosStart + this.padding,
+        y: Math.floor(lastY),
+      };
+      window.frameGeometry = frameGeometry;
+
+      lastY = lastY + windowHeight;
+    }
+
     window.interactiveMoveResizeStepped.connect(() => {
       window.frameGeometry = window.frameGeometry;
     });
@@ -49,7 +64,6 @@ export default class Column {
       if (window.move) window.frameGeometry = oldGeometry;
     });
 
-    this.windows.push(window);
     updatePager();
   }
 
@@ -87,14 +101,22 @@ export default class Column {
     // KWin.WorkspaceWrapper.ClientAreaOption.MaximizeArea;
     const currentScreenGeometry = workspace.clientArea(2, this.windows[0]);
 
-    if (!currentScreenGeometry) return print("KS: No Max Geometry found");
+    const windowHeight = Math.floor(
+      leastAreaGeometry.height / this.windows.length - this.padding * 2,
+    );
+
+    //Apply correct geometry with padding to windows
+    let lastY = leastAreaGeometry.y;
     for (const window of this.windows) {
-      window.frameGeometry = {
-        width: leastAreaGeometry.width - this.padding * 2,
-        height: leastAreaGeometry.height - this.padding * 2,
-        x: currentScreenGeometry.x + this.padding,
-        y: leastAreaGeometry.y + this.padding,
+      const frameGeometry = {
+        width: this.width - this.padding * 2,
+        height: windowHeight,
+        x: this.xPosStart + this.padding,
+        y: Math.floor(lastY),
       };
+      window.frameGeometry = frameGeometry;
+
+      lastY = lastY + windowHeight;
     }
 
     this.xPosStart = currentScreenGeometry.x;

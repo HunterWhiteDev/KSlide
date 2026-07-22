@@ -5,6 +5,7 @@ import updatePager from "./utils/updatePager";
 import getTotalWidth from "./utils/getTotalWidth";
 import getColumnWithWindow from "./utils/getColumnWithWindow";
 import toalWidth from "./utils/getTotalWidth";
+import removeColumnAtIndex from "./utils/removeColumnAtIndex";
 
 const grid = new Grid();
 const padding = 8;
@@ -46,6 +47,7 @@ workspace["__globals"] = {
   grid,
   autoFocus: true,
   getTotalWidth,
+  removeColumnAtIndex,
 };
 
 function handleMinimizedChange(window: KWin.AbstractClient) {
@@ -53,7 +55,6 @@ function handleMinimizedChange(window: KWin.AbstractClient) {
   else addWindow(window);
 }
 
-//TODO: Make this function add the new column of the last column's width + padding
 const addWindow = (newWindow: KWin.AbstractClient) => {
   if (
     exlcludeList.includes(newWindow.resourceName) ||

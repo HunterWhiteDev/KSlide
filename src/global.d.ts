@@ -12,6 +12,7 @@ export declare global {
         getColumnsSortedByXPos(): Column[];
         getTotalWidth(): number;
         getColumnWithWindow(window: KWin.AbstractClient): Column | null;
+        removeColumnAtIndex(index: number);
         grid: Grid;
         padding: number;
       };
