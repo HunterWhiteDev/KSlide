@@ -299,6 +299,8 @@ export const initShortcuts = () => {
       } else {
         //Just move over the window and size both
         leftColumn.addWindow(windowToMove);
+        //return so columns don't move
+        return;
       }
     }
 
@@ -366,13 +368,15 @@ export const initShortcuts = () => {
       } else {
         //Just move over the window and size both
         rightColumn.addWindow(windowToMove, 0);
+        //Return so columns dont move
+        return;
       }
     }
 
     //Now, we rebuild the columns and skip the one the window came from if it is now empty
     const updatedColumns = workspace.__globals.getColumnsSortedByXPos();
 
-    if (currentColIdx === columns.length - 1) return;
+    if (currentColIdx === updatedColumns.length - 1) return;
     for (let i = currentColIdx - 1; i >= 0; i--) {
       const col = updatedColumns[i];
       col.setXPos(col.xPosStart + activeColumn.width);
