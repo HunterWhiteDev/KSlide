@@ -8,6 +8,7 @@ export default function updatePager() {
       windows: column.windows.map((window: KWin.AbstractClient) => {
         return {
           resourceName: window.resourceName || "",
+          resourceClass: window.resourceClass || "",
           desktopFileName: window.desktopFileName || "",
           caption: window.caption || "",
           active: window.active || false,
