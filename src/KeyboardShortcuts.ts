@@ -304,6 +304,8 @@ export const initShortcuts = () => {
       }
     }
 
+    if (activeColumn.windows.length) activeColumn.maximize();
+
     //Now, we rebuild the columns and skip the one the window came from if it is now empty
     const updatedColumns = workspace.__globals.getColumnsSortedByXPos();
 
@@ -373,12 +375,14 @@ export const initShortcuts = () => {
       }
     }
 
+    if (activeColumn.windows.length) activeColumn.maximize();
+
     //Now, we rebuild the columns and skip the one the window came from if it is now empty
     const updatedColumns = workspace.__globals.getColumnsSortedByXPos();
 
     if (currentColIdx === updatedColumns.length - 1) return;
     for (let i = currentColIdx - 1; i >= 0; i--) {
-      const col = updatedColumns[i];
+      const col = columns[i];
       col.setXPos(col.xPosStart + activeColumn.width);
     }
   };
