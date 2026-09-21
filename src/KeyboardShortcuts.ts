@@ -30,8 +30,8 @@ export const initShortcuts = () => {
         //First check if col will go offscreen. If it will, don't scroll.
         if (
           activeColumn.xPosStart +
-          activeColumn.width +
-          workspace.__globals.padding >
+            activeColumn.width +
+            workspace.__globals.padding >
           maxWidth
         )
           return;
@@ -208,6 +208,7 @@ export const initShortcuts = () => {
         column.setXPos(column.xPosStart + difference);
       }
     }
+    updatePager();
   };
 
   const swapRight = () => {
@@ -230,6 +231,7 @@ export const initShortcuts = () => {
         column.setXPos(column.xPosStart - difference);
       }
     }
+    updatePager();
   };
 
   const increaseWidth = () => {
