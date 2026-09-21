@@ -30,8 +30,8 @@ export const initShortcuts = () => {
         //First check if col will go offscreen. If it will, don't scroll.
         if (
           activeColumn.xPosStart +
-          activeColumn.width +
-          workspace.__globals.padding >
+            activeColumn.width +
+            workspace.__globals.padding >
           maxWidth
         )
           return;
@@ -208,6 +208,7 @@ export const initShortcuts = () => {
         column.setXPos(column.xPosStart + difference);
       }
     }
+    updatePager();
   };
 
   const swapRight = () => {
@@ -230,6 +231,7 @@ export const initShortcuts = () => {
         column.setXPos(column.xPosStart - difference);
       }
     }
+    updatePager();
   };
 
   const increaseWidth = () => {
@@ -297,8 +299,12 @@ export const initShortcuts = () => {
       } else {
         //Just move over the window and size both
         leftColumn.addWindow(windowToMove);
+        //return so columns don't move
+        return;
       }
     }
+
+    if (activeColumn.windows.length) activeColumn.maximize();
 
     //Now, we rebuild the columns and skip the one the window came from if it is now empty
     const updatedColumns = workspace.__globals.getColumnsSortedByXPos();
@@ -364,15 +370,19 @@ export const initShortcuts = () => {
       } else {
         //Just move over the window and size both
         rightColumn.addWindow(windowToMove, 0);
+        //Return so columns dont move
+        return;
       }
     }
+
+    if (activeColumn.windows.length) activeColumn.maximize();
 
     //Now, we rebuild the columns and skip the one the window came from if it is now empty
     const updatedColumns = workspace.__globals.getColumnsSortedByXPos();
 
-    if (currentColIdx === columns.length - 1) return;
+    if (currentColIdx === updatedColumns.length - 1) return;
     for (let i = currentColIdx - 1; i >= 0; i--) {
-      const col = updatedColumns[i];
+      const col = columns[i];
       col.setXPos(col.xPosStart + activeColumn.width);
     }
   };
