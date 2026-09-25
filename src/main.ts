@@ -1,6 +1,6 @@
 import Column from "./Column";
 import Grid from "./Grid";
-import { initShortcuts } from "./KeyboardShortcuts";
+import { initShortcuts } from "./shortcuts/index";
 import updatePager from "./utils/updatePager";
 import getTotalWidth from "./utils/getTotalWidth";
 import getColumnWithWindow from "./utils/getColumnWithWindow";
